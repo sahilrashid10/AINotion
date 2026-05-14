@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: ainotion-db
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: YourPassword
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    networks:
+      - ainotion-network
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: ainotion-api
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=AINotionDB;User Id=sa;Password=YourPassword;"
+    ports:
+      - "5000:5000"
+    depends_on:
+      - sqlserver
+    networks:
+      - ainotion-network
+
+volumes:
+  sqlserver-data:
+
+networks:
+  ainotion-network:
+    driver: bridge

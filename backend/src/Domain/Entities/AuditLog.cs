@@ -1,3 +1,5 @@
+using System;
+
 namespace AINotion.Domain.Entities;
 
 /// <summary>

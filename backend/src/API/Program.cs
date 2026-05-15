@@ -1,22 +1,15 @@
 // Program.cs - ASP.NET Core Entry Point
-using YourNamespace.API.Extensions;
-using YourNamespace.API.Configurations;
+using AINotion.API.Extensions;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
 
-var builder = WebApplicationBuilder.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
-builder.Services.AddApplicationServices();
+builder.Services.AddControllers();
 builder.Services.AddInfrastructureServices(builder.Configuration);
-builder.Services.AddApiServices();
 
 var app = builder.Build();
-
-// Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
 
 app.UseHttpsRedirection();
 app.UseAuthorization();

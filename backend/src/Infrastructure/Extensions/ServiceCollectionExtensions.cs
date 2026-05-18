@@ -3,6 +3,8 @@ using AINotion.Infrastructure.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using AINotion.Application.Interfaces.Repositories;
+using AINotion.Infrastructure.Repositories;
 
 namespace AINotion.Infrastructure.Extensions;
 
@@ -45,6 +47,16 @@ public static class ServiceCollectionExtensions
             // options.EnableDetailedErrors();
             // options.EnableSensitiveDataLogging();
         });
+
+        // Register repositories
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
+        services.AddScoped<IWorkspaceMemberRepository, WorkspaceMemberRepository>();
+        services.AddScoped<IDocumentRepository, DocumentRepository>();
+        services.AddScoped<IDocumentVersionRepository, DocumentVersionRepository>();
+        services.AddScoped<IInvitationRepository, InvitationRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 
         return services;
     }

@@ -31,6 +31,10 @@ export function initContact() {
 
   const github = document.querySelector('[data-footprint="github"]');
   const leetcode = document.querySelector('[data-footprint="leetcode"]');
-  github?.setAttribute("href", "https://github.com/");
-  leetcode?.setAttribute("href", "https://leetcode.com/");
+  github?.setAttribute("href", "https://github.com/sahilrashid10");
+  leetcode?.setAttribute("href", "https://leetcode.com/u/sahilrashid10/");
+  github?.setAttribute("target", "_blank");
+  leetcode?.setAttribute("target", "_blank");
+  github?.setAttribute("rel", "noopener");
+  leetcode?.setAttribute("rel", "noopener");
 }

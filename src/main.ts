@@ -78,7 +78,7 @@ if (terminalCanvas) initTerminal(terminalCanvas);
 const heroVideoCanvas = document.getElementById("hero-video-canvas") as HTMLCanvasElement | null;
 if (heroVideoCanvas) {
   createScrollScrubVideo({
-    src: "/video/hero-terminal-boot.mp4",
+    src: import.meta.env.BASE_URL + "video/hero-terminal-boot.mp4",
     canvas: heroVideoCanvas,
     trigger: "#hero",
     start: "top top",
@@ -90,7 +90,7 @@ if (heroVideoCanvas) {
 const builderVideoCanvas = document.getElementById("builder-video-canvas") as HTMLCanvasElement | null;
 if (builderVideoCanvas) {
   createScrollScrubVideo({
-    src: "/video/the-builder.mp4",
+    src: import.meta.env.BASE_URL + "video/the-builder.mp4",
     canvas: builderVideoCanvas,
     trigger: ".experience",
     start: "top top",
@@ -102,7 +102,7 @@ if (builderVideoCanvas) {
 const teacherVideoCanvas = document.getElementById("teacher-video-canvas") as HTMLCanvasElement | null;
 if (teacherVideoCanvas) {
   createScrollScrubVideo({
-    src: "/video/the-teacher.mp4",
+    src: import.meta.env.BASE_URL + "video/the-teacher.mp4",
     canvas: teacherVideoCanvas,
     trigger: ".portfolio",
     start: "top bottom",
@@ -114,7 +114,7 @@ if (teacherVideoCanvas) {
 const closerVideoCanvas = document.getElementById("closer-video-canvas") as HTMLCanvasElement | null;
 if (closerVideoCanvas) {
   createScrollScrubVideo({
-    src: "/video/the-closer.mp4",
+    src: import.meta.env.BASE_URL + "video/the-closer.mp4",
     canvas: closerVideoCanvas,
     trigger: ".contact",
     start: "top bottom",

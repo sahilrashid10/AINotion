@@ -76,9 +76,17 @@ export function createScrollScrubVideo(opts: ScrubOptions) {
     window.clearTimeout(fallbackTimer);
     cancelAnimationFrame(raf);
     st?.kill();
+    io.disconnect();
     window.removeEventListener("resize", resize);
     placeholder = createPlaceholderScene(canvas, trigger);
   }
+
+  // draw only while the canvas is on screen
+  let visible = false;
+  const io = new IntersectionObserver((entries) => {
+    visible = entries[0]?.isIntersecting ?? false;
+  });
+  io.observe(canvas);
 
   video.addEventListener("loadedmetadata", () => {
     if (usingPlaceholder) return;
@@ -117,7 +125,7 @@ export function createScrollScrubVideo(opts: ScrubOptions) {
 
   function tick() {
     if (!usingPlaceholder) {
-      if (ready) drawFrame();
+      if (ready && visible) drawFrame();
       raf = requestAnimationFrame(tick);
     }
   }
@@ -128,6 +136,7 @@ export function createScrollScrubVideo(opts: ScrubOptions) {
       cancelAnimationFrame(raf);
       window.clearTimeout(fallbackTimer);
       st?.kill();
+      io.disconnect();
       placeholder?.destroy();
       window.removeEventListener("resize", resize);
       video.src = "";

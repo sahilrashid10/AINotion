@@ -29,7 +29,9 @@ export function createScrollScrubVideo(opts: ScrubOptions) {
   video.src = src;
   video.muted = true;
   video.playsInline = true;
-  video.preload = "auto";
+  // metadata only: four clips preloading in full would saturate the
+  // connection on first visit; scrub seeks fetch ranges on demand
+  video.preload = "metadata";
   video.crossOrigin = "anonymous";
 
   let ready = false;
@@ -101,7 +103,7 @@ export function createScrollScrubVideo(opts: ScrubOptions) {
 
   fallbackTimer = window.setTimeout(() => {
     if (!ready) activatePlaceholder();
-  }, 1500);
+  }, 800);
 
   window.addEventListener("resize", resize);
 

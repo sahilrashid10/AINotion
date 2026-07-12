@@ -26,9 +26,11 @@ const CODE_LINES = [
 ];
 
 function buildScreenTexture() {
+  // 768x480 reads identically on the tilted screen at a fraction of the
+  // per-frame fillText + texture upload cost of the original 1024x640
   const canvas = document.createElement("canvas");
-  canvas.width = 1024;
-  canvas.height = 640;
+  canvas.width = 768;
+  canvas.height = 480;
   const ctx = canvas.getContext("2d")!;
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -39,18 +41,18 @@ function buildScreenTexture() {
     ctx.fillStyle = "#0b0b0d";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.font = "28px 'Space Mono', monospace";
-    const lineHeight = 42;
+    ctx.font = "21px 'Space Mono', monospace";
+    const lineHeight = 32;
     const visibleLines = Math.ceil(canvas.height / lineHeight) + 2;
 
     for (let i = 0; i < visibleLines; i++) {
       const lineIndex = (Math.floor(offset) + i) % CODE_LINES.length;
       const line = CODE_LINES[lineIndex];
-      const y = i * lineHeight - (offset % 1) * lineHeight + 40;
+      const y = i * lineHeight - (offset % 1) * lineHeight + 30;
       const isPrompt = line.startsWith("$") || line.startsWith(">");
       ctx.fillStyle = isPrompt ? `#${AMBER.toString(16)}` : `#${BONE.toString(16)}`;
       ctx.globalAlpha = 0.85;
-      ctx.fillText(line, 32, y);
+      ctx.fillText(line, 24, y);
     }
     ctx.globalAlpha = 1;
 

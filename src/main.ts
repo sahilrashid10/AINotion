@@ -17,19 +17,28 @@ import { initContact } from "./sections/contact";
 
 gsap.registerPlugin(ScrollTrigger);
 
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 // ---------- smooth scroll ----------
-const lenis = new Lenis({
-  duration: 1.15,
-  easing: (t: number) => 1 - Math.pow(1 - t, 3),
-  smoothWheel: true,
-});
+const lenis = reducedMotion
+  ? null
+  : new Lenis({
+      duration: 1.15,
+      easing: (t: number) => 1 - Math.pow(1 - t, 3),
+      smoothWheel: true,
+    });
 
-lenis.on("scroll", ScrollTrigger.update);
+if (lenis) {
+  lenis.on("scroll", ScrollTrigger.update);
+  gsap.ticker.add((time) => {
+    lenis.raf(time * 1000);
+  });
+  gsap.ticker.lagSmoothing(0);
+}
 
-gsap.ticker.add((time) => {
-  lenis.raf(time * 1000);
-});
-gsap.ticker.lagSmoothing(0);
+// web fonts land after init and change every section's height — refresh all
+// pin/scrub distances once they're in or the page scrolls against stale maths
+document.fonts?.ready.then(() => ScrollTrigger.refresh());
 
 // ---------- smooth anchor navigation ----------
 document.querySelectorAll<HTMLAnchorElement>('a[href^="#"]').forEach((link) => {
@@ -39,13 +48,17 @@ document.querySelectorAll<HTMLAnchorElement>('a[href^="#"]').forEach((link) => {
     const target = document.querySelector(id);
     if (!target) return;
     e.preventDefault();
-    lenis.scrollTo(target as HTMLElement, { duration: 1.4 });
+    if (lenis) lenis.scrollTo(target as HTMLElement, { duration: 1.4 });
+    else target.scrollIntoView({ behavior: "auto" });
   });
 });
 
-// ---------- grain overlay ----------
+// ---------- grain overlay (deferred — pure garnish, never blocks first paint) ----------
 const grainCanvas = document.getElementById("grain") as HTMLCanvasElement | null;
-if (grainCanvas) initGrain(grainCanvas);
+if (grainCanvas && !reducedMotion) {
+  const startGrain = () => initGrain(grainCanvas);
+  "requestIdleCallback" in window ? requestIdleCallback(startGrain, { timeout: 2000 }) : setTimeout(startGrain, 400);
+}
 
 // ---------- global scroll progress rail ----------
 const progressFill = document.getElementById("progress-fill");

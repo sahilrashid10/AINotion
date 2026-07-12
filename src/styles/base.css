@@ -79,7 +79,7 @@ p {
   pointer-events: none;
   /* plain low opacity instead of mix-blend-mode: overlay — blend modes force
      the compositor to re-blend the whole page every grain frame */
-  opacity: 0.05;
+  opacity: 0.04;
 }
 
 /* ---------- scroll progress rail ---------- */

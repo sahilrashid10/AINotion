@@ -1,6 +1,6 @@
 /* ============ HERO ============ */
 .hero {
-  height: 260vh;
+  height: 220vh;
   background: var(--bg);
 }
 
@@ -197,7 +197,7 @@
 
 /* ============ EXPERIENCE ============ */
 .experience {
-  height: 340vh;
+  height: 300vh;
   background: var(--bg);
 }
 
@@ -343,11 +343,12 @@
 
 .card {
   flex: 0 0 clamp(24rem, 42vw, 34rem);
-  background: rgba(19, 19, 22, 0.72);
+  /* solid-ish fill instead of backdrop-filter: blurring an animated canvas
+     behind every card re-renders the blur each frame during the pin scrub */
+  background: rgba(19, 19, 22, 0.94);
   border: 1px solid var(--line);
   border-radius: 1.1rem;
   padding: clamp(1.75rem, 3vw, 2.5rem);
-  backdrop-filter: blur(6px);
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s ease, background 0.4s ease;
 }
 
@@ -532,6 +533,6 @@
 
 @media (max-width: 640px) {
   .experience {
-    height: 420vh;
+    height: 360vh;
   }
 }

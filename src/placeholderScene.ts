@@ -17,6 +17,24 @@ interface Particle {
  * in for the Higgsfield clip behind a section until real footage is dropped
  * into /public/video (same canvas, same scrub pipeline).
  */
+function buildGlowSprite(rgb: string, coreAlpha: number, midAlpha: number): HTMLCanvasElement {
+  const size = 256;
+  const c = document.createElement("canvas");
+  c.width = size;
+  c.height = size;
+  const gctx = c.getContext("2d")!;
+  const grad = gctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  grad.addColorStop(0, `rgba(${rgb}, ${coreAlpha})`);
+  grad.addColorStop(0.5, `rgba(${rgb}, ${midAlpha})`);
+  grad.addColorStop(1, `rgba(${rgb}, 0)`);
+  gctx.fillStyle = grad;
+  gctx.fillRect(0, 0, size, size);
+  return c;
+}
+
+const amberGlow = buildGlowSprite(AMBER, 0.16, 0.06);
+const boneGlow = buildGlowSprite(BONE, 0.05, 0.02);
+
 export function drawPlaceholderScene(
   ctx: CanvasRenderingContext2D,
   w: number,
@@ -26,31 +44,21 @@ export function drawPlaceholderScene(
   particles: Particle[],
   vignette?: HTMLCanvasElement
 ) {
-  ctx.clearRect(0, 0, w, h);
-
   // base wash
   ctx.fillStyle = "#0b0b0d";
   ctx.fillRect(0, 0, w, h);
 
-  // drifting amber glow, position tied to scroll progress
+  // drifting glows, position tied to scroll progress — pre-rendered sprites
+  // blitted at size instead of building radial gradients every frame
   const gx = w * (0.25 + progress * 0.5) + Math.sin(t * 0.15) * w * 0.06;
   const gy = h * (0.35 + Math.sin(t * 0.1 + progress * 3) * 0.12);
   const glowR = Math.max(w, h) * 0.55;
-  const glow = ctx.createRadialGradient(gx, gy, 0, gx, gy, glowR);
-  glow.addColorStop(0, `rgba(${AMBER}, 0.16)`);
-  glow.addColorStop(0.5, `rgba(${AMBER}, 0.06)`);
-  glow.addColorStop(1, `rgba(${AMBER}, 0)`);
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(amberGlow, gx - glowR, gy - glowR, glowR * 2, glowR * 2);
 
-  // secondary bone-white counter glow
   const gx2 = w * (0.75 - progress * 0.4) + Math.cos(t * 0.12) * w * 0.05;
   const gy2 = h * 0.7;
-  const glow2 = ctx.createRadialGradient(gx2, gy2, 0, gx2, gy2, glowR * 0.6);
-  glow2.addColorStop(0, `rgba(${BONE}, 0.05)`);
-  glow2.addColorStop(1, `rgba(${BONE}, 0)`);
-  ctx.fillStyle = glow2;
-  ctx.fillRect(0, 0, w, h);
+  const glowR2 = glowR * 0.6;
+  ctx.drawImage(boneGlow, gx2 - glowR2, gy2 - glowR2, glowR2 * 2, glowR2 * 2);
 
   // perspective data-grid horizon
   ctx.save();

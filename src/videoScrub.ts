@@ -16,10 +16,11 @@ interface ScrubOptions {
 /**
  * Draws a <video> element's decoded frame onto a canvas, with currentTime
  * driven directly by ScrollTrigger progress — a scroll-scrubbed frame sequence
- * without needing to extract individual image frames. Falls back to an
- * animated placeholder scene on the same canvas if the clip fails to load
- * (e.g. not generated yet), so dropping a real mp4 into /public/video later
- * requires no code changes.
+ * without needing to extract individual image frames.
+ *
+ * Source resolution order: the .mp4 at `src` (the user's real clip), then a
+ * .webm of the same name (the bundled placeholder clip), then the animated
+ * canvas scene. Dropping real mp4s into /public/video requires no code change.
  */
 export function createScrollScrubVideo(opts: ScrubOptions) {
   const { src, canvas, trigger, start = "top bottom", end = "bottom top", scrub = 0.4 } = opts;
@@ -33,6 +34,23 @@ export function createScrollScrubVideo(opts: ScrubOptions) {
   // connection on first visit; scrub seeks fetch ranges on demand
   video.preload = "metadata";
   video.crossOrigin = "anonymous";
+
+  const webmSrc = src.replace(/\.mp4$/, ".webm");
+  let triedWebm = false;
+
+  function tryWebmThenPlaceholder() {
+    if (!triedWebm && webmSrc !== src) {
+      triedWebm = true;
+      video.src = webmSrc;
+      video.load();
+      window.clearTimeout(fallbackTimer);
+      fallbackTimer = window.setTimeout(() => {
+        if (!ready) activatePlaceholder();
+      }, 2500);
+      return;
+    }
+    activatePlaceholder();
+  }
 
   let ready = false;
   let usingPlaceholder = false;
@@ -99,10 +117,10 @@ export function createScrollScrubVideo(opts: ScrubOptions) {
   });
 
   video.addEventListener("seeked", drawFrame);
-  video.addEventListener("error", activatePlaceholder);
+  video.addEventListener("error", tryWebmThenPlaceholder);
 
   fallbackTimer = window.setTimeout(() => {
-    if (!ready) activatePlaceholder();
+    if (!ready) tryWebmThenPlaceholder();
   }, 800);
 
   window.addEventListener("resize", resize);

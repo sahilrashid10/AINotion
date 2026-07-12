@@ -77,8 +77,9 @@ p {
   height: 100%;
   z-index: 999;
   pointer-events: none;
-  opacity: 0.055;
-  mix-blend-mode: overlay;
+  /* plain low opacity instead of mix-blend-mode: overlay — blend modes force
+     the compositor to re-blend the whole page every grain frame */
+  opacity: 0.05;
 }
 
 /* ---------- scroll progress rail ---------- */

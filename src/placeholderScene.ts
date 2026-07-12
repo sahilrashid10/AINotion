@@ -23,7 +23,8 @@ export function drawPlaceholderScene(
   h: number,
   t: number,
   progress: number,
-  particles: Particle[]
+  particles: Particle[],
+  vignette?: HTMLCanvasElement
 ) {
   ctx.clearRect(0, 0, w, h);
 
@@ -88,23 +89,44 @@ export function drawPlaceholderScene(
     ctx.fill();
   }
 
-  // vignette
-  const vignette = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.75);
-  vignette.addColorStop(0, "rgba(11,11,13,0)");
-  vignette.addColorStop(1, "rgba(11,11,13,0.85)");
-  ctx.fillStyle = vignette;
-  ctx.fillRect(0, 0, w, h);
+  // vignette (pre-rendered once per resize when provided)
+  if (vignette) {
+    ctx.drawImage(vignette, 0, 0);
+  } else {
+    const grad = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.75);
+    grad.addColorStop(0, "rgba(11,11,13,0)");
+    grad.addColorStop(1, "rgba(11,11,13,0.85)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+  }
+}
+
+function buildVignette(w: number, h: number): HTMLCanvasElement {
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const vctx = c.getContext("2d")!;
+  const grad = vctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.75);
+  grad.addColorStop(0, "rgba(11,11,13,0)");
+  grad.addColorStop(1, "rgba(11,11,13,0.85)");
+  vctx.fillStyle = grad;
+  vctx.fillRect(0, 0, w, h);
+  return c;
 }
 
 export function createPlaceholderScene(canvas: HTMLCanvasElement, trigger: string | Element) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return { destroy() {} };
 
+  let vignette: HTMLCanvasElement | undefined;
+
   function resize() {
     const rect = canvas.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-    canvas.width = Math.max(1, Math.round(rect.width * dpr));
-    canvas.height = Math.max(1, Math.round(rect.height * dpr));
+    // ambient background behind a dark scrim — soft glows upscale invisibly,
+    // and rendering ~5x fewer pixels keeps the gradient fills cheap
+    canvas.width = Math.max(1, Math.round(rect.width * 0.45));
+    canvas.height = Math.max(1, Math.round(rect.height * 0.45));
+    vignette = buildVignette(canvas.width, canvas.height);
   }
   resize();
   window.addEventListener("resize", resize);
@@ -127,12 +149,23 @@ export function createPlaceholderScene(canvas: HTMLCanvasElement, trigger: strin
     },
   });
 
+  // render only while the canvas is actually on screen
+  let visible = false;
+  const io = new IntersectionObserver((entries) => {
+    visible = entries[0]?.isIntersecting ?? false;
+  });
+  io.observe(canvas);
+
   const start = performance.now();
   let raf = 0;
+  let last = 0;
+  const frameInterval = 1000 / 30;
   function tick(now: number) {
-    const t = (now - start) / 1000;
-    drawPlaceholderScene(ctx!, canvas.width, canvas.height, t, progress, particles);
     raf = requestAnimationFrame(tick);
+    if (!visible || now - last < frameInterval) return;
+    last = now;
+    const t = (now - start) / 1000;
+    drawPlaceholderScene(ctx!, canvas.width, canvas.height, t, progress, particles, vignette);
   }
   raf = requestAnimationFrame(tick);
 
@@ -140,6 +173,7 @@ export function createPlaceholderScene(canvas: HTMLCanvasElement, trigger: strin
     destroy() {
       cancelAnimationFrame(raf);
       st.kill();
+      io.disconnect();
       window.removeEventListener("resize", resize);
     },
   };

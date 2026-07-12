@@ -14,7 +14,6 @@ import { initExperience } from "./sections/experience";
 import { initPortfolio } from "./sections/portfolio";
 import { initAbout } from "./sections/about";
 import { initContact } from "./sections/contact";
-import { initTerminal } from "./three/terminal";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -70,9 +69,11 @@ initPortfolio();
 initAbout();
 initContact();
 
-// ---------- 3D terminal centerpiece ----------
+// ---------- 3D terminal centerpiece (lazy: keeps three.js out of the critical bundle) ----------
 const terminalCanvas = document.getElementById("terminal-canvas") as HTMLCanvasElement | null;
-if (terminalCanvas) initTerminal(terminalCanvas);
+if (terminalCanvas) {
+  import("./three/terminal").then(({ initTerminal }) => initTerminal(terminalCanvas));
+}
 
 // ---------- scroll-scrubbed cinematic clips ----------
 const heroVideoCanvas = document.getElementById("hero-video-canvas") as HTMLCanvasElement | null;

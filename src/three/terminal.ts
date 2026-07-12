@@ -68,7 +68,7 @@ function buildScreenTexture() {
   return {
     texture,
     tick() {
-      offset += 0.045;
+      offset += 0.09; // called every 2nd frame — same visual scroll speed
       draw();
     },
   };
@@ -156,14 +156,17 @@ export function initTerminal(canvas: HTMLCanvasElement) {
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
   camera.position.set(0, 0.15, 6.2);
 
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  // antialias off: EffectComposer renders via an offscreen target, so MSAA
+  // on the default framebuffer never applies — it only costs memory/fill
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.setClearColor(0x000000, 0);
 
   const composer = new EffectComposer(renderer);
   const renderPass = new RenderPass(scene, camera);
   composer.addPass(renderPass);
-  const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.65, 0.5, 0.72);
+  // fixed low internal resolution keeps the blur passes cheap; bloom is soft by nature
+  const bloom = new UnrealBloomPass(new THREE.Vector2(256, 144), 0.65, 0.5, 0.72);
   composer.addPass(bloom);
 
   const { group, hinge, screenTex, particles } = buildTerminal();
@@ -204,10 +207,50 @@ export function initTerminal(canvas: HTMLCanvasElement) {
     },
   });
 
-  const clock = new THREE.Clock();
+  // render only while the hero is on screen
+  let visible = false;
+  const io = new IntersectionObserver((entries) => {
+    visible = entries[0]?.isIntersecting ?? false;
+  });
+  io.observe(canvas);
+
+  // adaptive quality: measure real frame rate and shed cost in two steps —
+  // 1) drop the bloom composer, 2) render at reduced resolution — so weak
+  // GPUs stay smooth while capable ones keep the full look
+  let qualityLevel = 0;
+  let fpsWindowStart = 0;
+  let fpsFrames = 0;
+
+  function degrade() {
+    qualityLevel++;
+    if (qualityLevel === 2) {
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1) * 0.66);
+      resize();
+    }
+  }
+
+  function trackFps(now: number) {
+    if (qualityLevel >= 2) return;
+    if (!fpsWindowStart) fpsWindowStart = now;
+    fpsFrames++;
+    const elapsed = now - fpsWindowStart;
+    if (elapsed >= 1500) {
+      const fps = (fpsFrames / elapsed) * 1000;
+      if (fps < 34) degrade();
+      fpsWindowStart = now;
+      fpsFrames = 0;
+    }
+  }
+
+  const startTime = performance.now();
+  let frame = 0;
 
   function animate() {
-    const t = clock.getElapsedTime();
+    requestAnimationFrame(animate);
+    if (!visible) return;
+    const now = performance.now();
+    trackFps(now);
+    const t = (now - startTime) / 1000;
 
     const unfoldEased = 1 - Math.pow(1 - state.unfold, 3);
     hinge.rotation.x = THREE.MathUtils.lerp(CLOSED, OPEN, unfoldEased);
@@ -216,15 +259,18 @@ export function initTerminal(canvas: HTMLCanvasElement) {
     group.position.y = Math.sin(t * 0.6) * 0.05;
     particles.rotation.y = t * 0.02;
 
-    screenTex.tick();
+    // the scrolling code texture reads fine at half rate; redrawing a
+    // 1024x640 canvas with text every frame is the expensive part
+    if (frame++ % 2 === 0) screenTex.tick();
 
-    composer.render();
-    requestAnimationFrame(animate);
+    if (qualityLevel === 0) composer.render();
+    else renderer.render(scene, camera);
   }
   requestAnimationFrame(animate);
 
   return {
     destroy() {
+      io.disconnect();
       window.removeEventListener("resize", resize);
       renderer.dispose();
     },
